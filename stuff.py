@@ -356,4 +356,3 @@ class Stuff(object, metaclass=MetaStuff):
     total_units = self._granular_units + other._granular_units
     self._granular_units, other._granular_units = 0, total_units
     return other
-
