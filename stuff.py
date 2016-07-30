@@ -1,16 +1,8 @@
-"""Contains the Stuff class which represents like bits of arbitrary kinds of stuff."""
+"""Contains the Stuff class which represents like pieces of arbitrary kinds of stuff.
 
-class Error(Exception):
-  """Top level error for this module."""
-  pass
+Operations involving stuff conserve stuff, so
 
-class AmountError(Error):
-  """Raised when an invalid amount of stuff is created."""
-  pass
-
-class ConfigError(Error):
-  """Raised when a Stuff type has an invalid configuration."""
-  pass
+"""
 
 
 class MetaStuff(type):
@@ -28,6 +20,11 @@ class MetaStuff(type):
     return self._granularity
 
   @property
+  def name(self):
+    """name of the type of stuff."""
+    return self._name
+
+  @property
   def smallest_allowed_amount(self):
     """The minimum amount of stuff an instance can contain given the minimum quantity and
     granularity.
@@ -37,23 +34,41 @@ class MetaStuff(type):
     else:
       return math.ceil(self.min_amount / self.granularity) * self.granularity
 
-  def __new__(cls, name, bases, namespace, min_amount=1, granularity=1):
+  def __new__(
+      cls, name, bases, namespace, min_amount=1, granularity=1, registry_name=None):
+    """Creates a new stuff subtype.
+
+    :cls: the meta type of the new type.
+    :name: name of the new type.
+    :bases: list of base types for the new type.
+    :namespace: dictionary of the new type's contents.
+    :min_amount: min amount of stuff the new type allows.
+    :granularity: size of packets of stuff.
+    :registry_name: alternate name for the new kind of stuff. Used for registration and
+      in names. Defaults to the name of the stuff type.
+    """
     if not isinstance(min_amount, int):
       raise TypeError('min_amount must be an integer')
     if not isinstance(granularity, int):
       raise TypeError('granularity must be an integer')
     min_amount = int(min_amount)
     granularity = int(granularity)
+    if registry_name is not None:
+      if not isinstance(registry_name, str):
+        raise TypeError('name must be a string')
+    else:
+      registry_name = name
 
     if min_amount < 1:
-      raise ConfigError('min amount of stuff must be at least 1')
+      raise ValueError('min amount of stuff must be at least 1')
     if granularity < 1:
-      raise ConfigError('granularity of stuff must be at least 1')
+      raise ValueError('granularity of stuff must be at least 1')
 
     # Actual size and granularity data are only "hidden" in underscore variables.
     # (Closure-based properties are possible but not really worth it.
     namespace['_min_amount'] = min_amount
     namespace['_granularity'] = granularity
+    namespace['_name'] = registry_name
 
     # Provide both class an instance level property accessors without having to duplicate
     # the accessor code. (Because @property does't work on @classmethod and @classmethod
@@ -61,6 +76,7 @@ class MetaStuff(type):
     provide_methods = [
         'min_amount',
         'granularity',
+        'name',
         'smallest_allowed_amount',
     ]
 
@@ -81,7 +97,8 @@ class Stuff(object, metaclass=MetaStuff):
   smallest unit that can be split out). These are controlled by setting keyword arguments to the type constructor.
 
   :min_amount: is the least amount of stuff that an individual object of this type is
-    allowed to contain. Defaults to 1.
+    allowed to contain. Defaults to 1. (Objects are always allowed to contain zero stuff,
+    no matter the set minimum. The minimum applies to any nonzero amount of stuff).
 
   :granularity: is the divisibility of objects of this type. When breaking down into
     chunks, objects of this type must contain a multiple of this amount of stuff. Defaults
@@ -99,9 +116,9 @@ class Stuff(object, metaclass=MetaStuff):
     amount = int(amount)
 
     if amount % self.granularity != 0:
-      raise AmountError('amount is not divisibile by the granularity')
+      raise ValueError('amount is not divisibile by the granularity')
     if amount < self.min_amount and amount != 0:
-      raise AmountError('amount is less than the minimum amount')
+      raise ValueError('amount is less than the minimum amount')
 
     self._granular_units = amount // self.granularity
 
@@ -128,7 +145,7 @@ class Stuff(object, metaclass=MetaStuff):
 
   def __str__(self):
     """Return a representation of this object in the form "{amount} {typename}"."""
-    return '{} {}'.format(self.amount, type(self).__name__)
+    return '{} {}'.format(self.amount, self.name)
 
   def __repr__(self):
     """Return a representation of this object in the form "[{amount} {typename}]"."""
@@ -182,12 +199,12 @@ class Stuff(object, metaclass=MetaStuff):
       return NotImplemented
     amount = int(amount)
     if amount % self.granularity != 0:
-      raise AmountError('amount is not divisibile by the granularity')
+      raise ValueError('amount is not divisibile by the granularity')
 
-    if amount < self.min_amount:
-      raise AmountError('removal is not large enough to satisfy minimum amount')
-    if self.amount - amount < self.min_amount:
-      raise AmountError('removal does not leave behind enough stuff for this instance')
+    if amount != 0 and amount < self.min_amount:
+      raise ValueError('removal is not large enough to satisfy minimum amount')
+    if self.amount != amount and self.amount - amount < self.min_amount:
+      raise ValueError('removal does not leave behind enough stuff for this instance')
 
     new_granular_units = (self.amount - amount) // self.granularity
     new_stuff = self._with_amount(amount)
@@ -218,14 +235,14 @@ class Stuff(object, metaclass=MetaStuff):
     Returns a tuple of stuff with length == pieces which contains the split up stuff from
     self.
 
-    Raises an AmountError if the stuff cannot be split up into that number of pieces.
+    Raises an ValueError if the stuff cannot be split up into that number of pieces.
     """
     if not isinstance(pieces, int):
       return NotImplemented
     pieces = int(pieces)
     base_units_per_piece, remaining_units = divmod(self._granular_units, pieces)
     if base_units_per_piece * self.granularity < self.min_amount:
-      raise AmountError('Not enough stuff to meet minimum amount requirements')
+      raise ValueError('Not enough stuff to meet minimum amount requirements')
 
     new_stuff = []
     for i in range(pieces):
