@@ -204,7 +204,7 @@ class Stuff(object, metaclass=MetaStuff):
     """
     return NotImplemented
 
-  def __div__(self, pieces):
+  def __floordiv__(self, pieces):
     """Attempts to split this stuff into the specified amount of pieces, with
     approximately equal size for each piece.
 
@@ -224,7 +224,7 @@ class Stuff(object, metaclass=MetaStuff):
       return NotImplemented
     pieces = int(pieces)
     base_units_per_piece, remaining_units = divmod(self._granular_units, pieces)
-    if base_units_per_piecs * self.granularity < self.min_amount:
+    if base_units_per_piece * self.granularity < self.min_amount:
       raise AmountError('Not enough stuff to meet minimum amount requirements')
 
     new_stuff = []
@@ -236,6 +236,19 @@ class Stuff(object, metaclass=MetaStuff):
 
     self._granular_units = 0
     return tuple(new_stuff)
+
+  def __mod__(self, pieces):
+    """Tests whether this stuff can be broken into a given number of pieces.
+
+    :self: the stuff.
+    :pieces: the number of pieces.
+    """
+    if not isinstance(pieces, int):
+      return NotImplemented
+    pieces = int(pieces)
+    base_units_per_piece = self._granular_units // pieces
+    return base_units_per_piece * self.granularity >= self.min_amount
+
 
   def __lshift__(self, other):
     """Shift all the stuff into the left argument. Return the object that now contains all
