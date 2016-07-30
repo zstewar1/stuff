@@ -1,8 +1,54 @@
 """Contains the Stuff class which represents like pieces of arbitrary kinds of stuff.
 
-Operations involving stuff conserve stuff, so
+Operations involving stuff conserve stuff, so the only way to get more of a particular
+kind of stuff is through the type's constructor.
 
+Typical usage is by defining a new type of stuff by subclassing Stuff.
+
+>>> class MyStuff(Stuff, min_amount=6, granularity=3):
+...   pass
+
+This creates a kind of stuff called MyStuff which can only be constructed in blobs of
+three at a time, and requires at least 6 items for any nonempty instance.
+
+Instance of MyStuff can be created, and stuff can be moved between them:
+
+>>> x = MyStuff(9) # create 9 new stuff
+>>> y = MyStuff(18) # create 18 new stuff
+
+>>> (y - 6) >> x # Remove 6 stuff from y, and send it to x.
+[15 of MyStuff]
+>>> y
+[12 of MyStuff]
+>>> x
+[15 of MyStuff]
+
+Supported operations include:
+  - Addition: combine two stuff into a new stuff, emptying the originals in the process.
+  - In-Place Addition: put all the stuff from one stuff into another stuff.
+  - Subtraction: split off some amount of stuff into a new object.
+  - Division: split split stuff into a tuple of smaller bits of stuff.
+  - Modulo: check if a split would be valid.
+  - Left Shift: Put all the stuff in the left operand.
+  - Right Shift: Put all the stuff in the right operand.
+
+Stuff is type safe, so every new stuff subtype cannot be mixed with any other type of
+stuff.
 """
+
+import threading
+
+_REGISTRY_LOCK = threading.RLock()
+_REGISTRY = {}
+
+def get_stuff(name):
+  """Attempt to get the type of stuff with the given registry name. Returns none if no
+  such type of stuff exists.
+
+  :name: the name of the type of stuff ot look up.
+  """
+  with _REGISTRY_LOCK:
+    return _REGISTRY.get(name)
 
 
 class MetaStuff(type):
@@ -84,7 +130,16 @@ class MetaStuff(type):
       if not any(hasattr(base, method) for base in bases):
         namespace[method] = getattr(MetaStuff, method)
 
-    return super().__new__(cls, name, bases, namespace)
+    with _REGISTRY_LOCK:
+      if registry_name in _REGISTRY:
+        raise TypeError('Attempting to create already existing type of stuff')
+
+      new_type = super().__new__(cls, name, bases, namespace)
+
+      _REGISTRY[registry_name] = new_type
+
+    return new_type
+
 
   def __init__(self, name, bases, namespace, **kwds):
     super().__init__(name, bases, namespace)
@@ -145,7 +200,7 @@ class Stuff(object, metaclass=MetaStuff):
 
   def __str__(self):
     """Return a representation of this object in the form "{amount} {typename}"."""
-    return '{} {}'.format(self.amount, self.name)
+    return '{} of {}'.format(self.amount, self.name)
 
   def __repr__(self):
     """Return a representation of this object in the form "[{amount} {typename}]"."""
