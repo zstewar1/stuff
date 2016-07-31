@@ -378,21 +378,21 @@ class Stuff(object, metaclass=MetaStuff):
       return NotImplemented
     return self.combine(other)
 
-  def __sub__(self, amount):
+  def __sub__(self, units):
     """Remove stuff from this stuff and return a new stuff that contains the removed
     stuff. Warning: Does not do normal subtraction. Modifies self in place.
 
-    Stuff is conserved by this operation. After this operation, self contains "amount"
-    less stuff than before, and a new Stuff is created which contains "amount" stuff.
+    Stuff is conserved by this operation. After this operation, self contains less stuff,
+    and a new stuff is returned which contains the stuff which was removed.
 
     :self: our stuff.
-    :amount: how much stuff to split off into the new instance.
+    :units: how many units of stuff should be removed.
 
     returns a new stuff of the same type containing part of the original stuff.
     """
-    if not isinstance(amount, int):
+    if not isinstance(units, int):
       return NotImplemented
-    return self.separate(amount)
+    return self.separate_units(units)
 
   def __isub__(self, *args):
     """Returns not-implmented because in-place subtraction of stuff is not allowed.
