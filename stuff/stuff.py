@@ -385,7 +385,7 @@ class Stuff(object, metaclass=MetaStuff):
 
     returns a new stuff of the same type containing part of the original stuff.
     """
-    if not self._check_unit_type(units)
+    if not self._check_unit_type(units):
       return NotImplemented
     return self.separate(units)
 
