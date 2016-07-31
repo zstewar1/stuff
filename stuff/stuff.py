@@ -238,7 +238,7 @@ class Stuff(object, metaclass=MetaStuff):
     self._units = 0
     return amount
 
-  def combine(self, other):
+  def put(self, other):
     """Put stuff from another stuff in this stuff.
 
     Stuff is conserved by this operation. After this operation the other object contains
@@ -255,6 +255,24 @@ class Stuff(object, metaclass=MetaStuff):
     total_units = self._units + other._units
     self._units, other._units = total_units, 0
     return self
+
+  def combine(self, other):
+    """Combine this stuff and other stuff into a new object.
+
+    Stuff is conserved by this operation. After this operation both original objects are
+    empty and a new stuff is returned which contains all of the stuff from both originals.
+
+    :self: our stuff.
+    :other: other stuff to take.
+
+    returns a new object which contains the combined stuff of the originals.
+    """
+    if type(self) != type(other):
+      raise TypeError('stuff must be of the same type to combine')
+    new_object = self._with_amount(0)
+    new_object.put(other)
+    new_object.put(self)
+    return new_object
 
   def separate(self, units):
     """Separate stuff from this stuff and return a new stuff that contains the removed
@@ -359,6 +377,21 @@ class Stuff(object, metaclass=MetaStuff):
     return '[' + str(self) + ']'
 
   def __add__(self, other):
+    """Combine this stuff and other stuff into a new object.
+
+    Stuff is conserved by this operation. After this operation both original objects are
+    empty and a new stuff is returned which contains all of the stuff from both originals.
+
+    :self: our stuff.
+    :other: other stuff to take.
+
+    returns a new object which contains the combined stuff of the originals.
+    """
+    if type(self) != type(other):
+      return NotImplemented
+    return self.combine(other)
+
+  def __iadd__(self, other):
     """Put stuff from another stuff in this stuff.
 
     Stuff is conserved by this operation. After this operation the other object contains
@@ -371,7 +404,7 @@ class Stuff(object, metaclass=MetaStuff):
     """
     if type(self) != type(other):
       return NotImplemented
-    return self.combine(other)
+    return self.put(other)
 
   def __sub__(self, units):
     """Remove stuff from this stuff and return a new stuff that contains the removed
