@@ -64,18 +64,18 @@ class MetaStuff(type):
     :bases: list of base types for the new type.
     :namespace: dictionary of the new type's contents.
     """
-    if not isinstance(self.min_amount, int):
-      raise TypeError('min_amount must be an integer')
+    if not isinstance(self.min_units, int):
+      raise TypeError('min_units must be an integer')
     if not isinstance(self.granularity, int):
       raise TypeError('granularity must be an integer')
-    self.min_amount = int(self.min_amount)
+    self.min_units = int(self.min_units)
     self.granularity = int(self.granularity)
     if self.name is not None:
       if not isinstance(self.name, str):
         raise TypeError('name must be a string')
       self.name = str(self.name)
 
-    if self.min_amount < 1:
+    if self.min_units < 1:
       raise ValueError('min amount of stuff must be at least 1')
     if self.granularity < 1:
       raise ValueError('granularity of stuff must be at least 1')
@@ -96,9 +96,9 @@ class Stuff(object, metaclass=MetaStuff):
   on the class instance. The validity of these properties will be verified at type
   definition time.
 
-  :min_amount: is the least amount of stuff that an individual object of this type is
-    allowed to contain. Defaults to 1. (Objects are always allowed to contain zero stuff,
-    no matter the set minimum. The minimum applies to any nonzero amount of stuff).
+  :min_units: is the least number of units of stuff that an individual object of this type
+    is allowed to contain. Defaults to 1. (Objects are always allowed to contain zero
+    stuff, no matter the set minimum. The minimum applies to any nonzero amount of stuff).
 
   :granularity: is the divisibility of objects of this type. When breaking down into
     chunks, objects of this type must contain a multiple of this amount of stuff. Defaults
@@ -107,25 +107,18 @@ class Stuff(object, metaclass=MetaStuff):
   :name: is the name that the type will be registered under in the stuff type registry. If
     it is None, the subtype will not be registered.
   """
-  min_amount = 1
+  min_units = 1
 
   granularity = 1
 
   name = None
 
   @classmethod
-  def smallest_allowed_amount(cls):
+  def min_amount(cls):
     """The minimum amount of stuff an instance can contain given the minimum quantity and
     granularity.
     """
-    return cls.least_allowed_units * cls.granularity
-
-  @classmethod
-  def least_allowed_units(cls):
-    """The minimum number of units of stuff an instance can contain given the minimum
-    quantity and granularity.
-    """
-    return math.ceil(cls.min_amount / cls.granularity)
+    return cls.min_units * cls.granularity
 
   def __init__(self, units=0):
     """Creates new stuff of this type.
@@ -134,6 +127,8 @@ class Stuff(object, metaclass=MetaStuff):
     """
     self._units = 0
     self.add(units)
+    if self._units < self.min_units:
+      raise ValueError('not enough stuff for minimum amount')
 
   @property
   def amount(self):
@@ -197,7 +192,7 @@ class Stuff(object, metaclass=MetaStuff):
     if units > self._units:
       raise ValueError('cannot remove more stuff than we have')
     remaining = self._units - units
-    if remaining != 0 and remaining < self.least_allowed_units():
+    if remaining != 0 and remaining < self.min_units:
       raise ValueError('does not leave enough stuff behind')
     self._units = remaining
     return remaining
@@ -292,10 +287,10 @@ class Stuff(object, metaclass=MetaStuff):
       raise ValueError('can only separate out a positive amount of stuff')
     if units > self._units:
       raise ValueError('cannot separate more units than we have')
-    if units < self.least_allowed_units():
-      raise ValueError('must separate at least the min_amount worth of units')
+    if units < self.min_units:
+      raise ValueError('must separate at least the min_units')
     remaining = self._units - units
-    if remaining != 0 and remaining < self.least_allowed_units():
+    if remaining != 0 and remaining < self.min_units:
       raise ValueError('does not leave enough stuff behind')
     new_stuff = self._with_units(units)
     self._units = remaining
@@ -340,7 +335,7 @@ class Stuff(object, metaclass=MetaStuff):
     if pieces <= 0:
       raise ValueError('number of pieces must be positive')
     base_units_per_piece, remaining_units = divmod(self._units, pieces)
-    if base_units_per_piece < self.least_allowed_units():
+    if base_units_per_piece < self.min_units:
       raise ValueError('not enough stuff to make the requested number of pieces')
     new_stuff = []
     for i in range(pieces):
@@ -448,7 +443,7 @@ class Stuff(object, metaclass=MetaStuff):
     if pieces <= 0:
       raise ValueError('number of pieces must be positive')
     base_units_per_piece = self._units // pieces
-    return base_units_per_piece >= self.least_allowed_units()
+    return base_units_per_piece >= self.min_units
 
   def __lshift__(self, other):
     """Shift all the stuff into the left argument. Return the object that now contains all
