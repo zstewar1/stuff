@@ -1,12 +1,14 @@
 """Contains the Stuff class which represents like pieces of arbitrary kinds of stuff.
 
-Operations involving stuff conserve stuff, so the only way to get more of a particular
-kind of stuff is through the type's constructor.
+Operations involving stuff conserve stuff. More stuff can be created through the
+constructor or by using the add method.
 
 Typical usage is by defining a new type of stuff by subclassing Stuff.
 
->>> class MyStuff(Stuff, min_amount=6, granularity=3):
-...   pass
+>>> class MyStuff(Stuff):
+...   min_units = 2
+...   unit_size = 2.5
+...   name = 'my stuff'
 
 This creates a kind of stuff called MyStuff which can only be constructed in blobs of
 three at a time, and requires at least 6 items for any nonempty instance.
@@ -17,11 +19,11 @@ Instance of MyStuff can be created, and stuff can be moved between them:
 >>> y = MyStuff(18) # create 18 new stuff
 
 >>> (y - 6) >> x # Remove 6 stuff from y, and send it to x.
-[15 of MyStuff]
+[15 my stuff]
 >>> y
-[12 of MyStuff]
+[12 my stuff]
 >>> x
-[15 of MyStuff]
+[15 my stuff]
 
 Supported operations include:
   - Addition: combine two stuff into a new stuff, emptying the originals in the process.
@@ -36,7 +38,7 @@ Stuff is type safe, so every new stuff subtype cannot be mixed with any other ty
 stuff.
 """
 
-import math
+from numbers import Integral, Real
 import threading
 
 _REGISTRY_LOCK = threading.RLock()
@@ -64,21 +66,21 @@ class MetaStuff(type):
     :bases: list of base types for the new type.
     :namespace: dictionary of the new type's contents.
     """
-    if not isinstance(self.min_units, int):
-      raise TypeError('min_units must be an integer')
-    if not isinstance(self.granularity, int):
-      raise TypeError('granularity must be an integer')
-    self.min_units = int(self.min_units)
-    self.granularity = int(self.granularity)
+    if self.unit_type != int and self.unit_type != float:
+      raise TypeError('unit_type must be either int or float')
+    self.min_units = self._convert_units(self.min_units, var='min_units')
+    if not isinstance(self.unit_size, Real):
+      raise TypeError('unit_size must be a real number')
+    self.unit_size = float(self.unit_size)
     if self.name is not None:
       if not isinstance(self.name, str):
         raise TypeError('name must be a string')
       self.name = str(self.name)
 
-    if self.min_units < 1:
-      raise ValueError('min amount of stuff must be at least 1')
-    if self.granularity < 1:
-      raise ValueError('granularity of stuff must be at least 1')
+    if self.min_units <= 0:
+      raise ValueError('min units of stuff must be positive')
+    if self.unit_size < 0:
+      raise ValueError('unit_size of stuff must nonnegative')
 
     name = self.name
     if name is not None:
@@ -100,40 +102,67 @@ class Stuff(object, metaclass=MetaStuff):
     is allowed to contain. Defaults to 1. (Objects are always allowed to contain zero
     stuff, no matter the set minimum. The minimum applies to any nonzero amount of stuff).
 
-  :granularity: is the divisibility of objects of this type. When breaking down into
-    chunks, objects of this type must contain a multiple of this amount of stuff. Defaults
-    to 1.
+  :unit_size: how large each unit of this kind of stuff is. It is recommended to choose
+    unit_size such that it is either an integer or a rational, nonrepeating fraction in
+    binary, as this allows stuff sizes to be manipulated prcisely.
 
   :name: is the name that the type will be registered under in the stuff type registry. If
     it is None, the subtype will not be registered.
+
+  :unit_type: this is the numeric type of the stuff being handled. Accepted values are
+    int and float. Defaults to int.
   """
   min_units = 1
 
-  granularity = 1
+  unit_size = 1.0
 
   name = None
 
+  unit_type = int
+
   @classmethod
-  def min_amount(cls):
-    """The minimum amount of stuff an instance can contain given the minimum quantity and
-    granularity.
+  def min_size(cls):
+    """The minimum size of stuff an instance can contain given the minimum quantity and
+    unit_size.
     """
-    return cls.min_units * cls.granularity
+    return cls.min_units * cls.unit_size
+
+  @classmethod
+  def _convert_units(cls, units, var='units'):
+    if cls.unit_type == int:
+      if not isinstance(units, Integral):
+        raise TypeError('{} must be a real number'.format(var))
+      return int(units)
+    elif cls.unit_type == float:
+      if not isinstance(units, Real):
+        raise TypeError('{} must be a real number'.format(var))
+      return float(units)
+    else:
+      raise TypeError('unknown unit type {}'.format(cls.unit_type))
+
+  @classmethod
+  def _check_unit_type(cls, units):
+    if cls.unit_type == int:
+      return isinstance(units, Integral)
+    elif cls.unit_type == float:
+      return isinstance(units, Real)
+    else:
+      raise TypeError('unknown unit type {}'.format(cls.unit_type))
 
   def __init__(self, units=0):
     """Creates new stuff of this type.
 
     :units: How many units of new stuff this object should contain.
     """
-    self._units = 0
+    self._units = self._convert_units(0)
     self.add(units)
     if self._units < self.min_units:
       raise ValueError('not enough stuff for minimum amount')
 
   @property
-  def amount(self):
-    """The total amount of stuff contained in this collection."""
-    return self._units * self.granularity
+  def size(self):
+    """The total size of the stuff contained in this collection."""
+    return self._units * self.unit_size
 
   @property
   def units(self):
@@ -150,29 +179,11 @@ class Stuff(object, metaclass=MetaStuff):
 
     returns the new number of units of stuff being held.
     """
-    if not isinstance(units, int):
-      raise TypeError('units must be an integer')
+    units = self._convert_units(units)
     if units < 0:
       raise ValueError('can only add positive amounts of stuff')
     self._units += units
     return self.units
-
-  def add_amount(self, amount):
-    """Add more stuff to the stuff tracker.
-
-    This differs from the addition operator in that the operators are for moving stuff
-    around while keeping track of it, whereas this is for adding more stuff to be tracked.
-
-    :amount: how much new stuff to keep track of.
-
-    returns the new amount of stuff being held.
-    """
-    if not isinstance(amount, int):
-      raise TypeError('amount must be an integer')
-    if amount % self.granularity != 0:
-      raise ValueError('amount is not divisible by the granularity')
-    self.add(amount // self.granularity)
-    return self.amount
 
   def remove(self, units):
     """Remove units of stuff rom this stuff tracker.
@@ -185,8 +196,7 @@ class Stuff(object, metaclass=MetaStuff):
 
     returns how many units of stuff are left.
     """
-    if not isinstance(units, int):
-      raise TypeError('units must be an integer')
+    units = self._convert_units(units)
     if units < 0:
       raise ValueError('can only remove positive amounts of stuff')
     if units > self._units:
@@ -197,41 +207,14 @@ class Stuff(object, metaclass=MetaStuff):
     self._units = remaining
     return remaining
 
-  def remove_amount(self, amount):
-    """Remove an amount of stuff from this tracker.
-
-    This differs from the subtraction operator in that the operators are for moving stuff
-    around while keeping track of it, whereas this is for removing stuff from being
-    tracked at all.
-
-    :amount: how much new stuff to get rid of.
-
-    returns how much stuff is left.
-    """
-    if not isinstance(amount, int):
-      raise TypeError('amount must be an integer')
-    if amount % self.granularity != 0:
-      raise ValueError('amount is not divisible by the granularity')
-    self.remove(amount // granularity)
-    return self.amount
-
   def clear(self):
     """Remove all of the stuff from this tracker, discarding it.
 
     returns how many units were removed.
     """
     units = self._units
-    self._units = 0
+    self._units = self._convert_units(0)
     return units
-
-  def clear_amount(self):
-    """Remove all of the stuff from this tracker, discarding it.
-
-    returns how much stuff was removed.
-    """
-    amount = self.amount
-    self._units = 0
-    return amount
 
   def put(self, other):
     """Put stuff from another stuff in this stuff.
@@ -248,7 +231,7 @@ class Stuff(object, metaclass=MetaStuff):
       raise TypeError('stuff must be of the same type to combine')
 
     total_units = self._units + other._units
-    self._units, other._units = total_units, 0
+    self._units, other._units = total_units, other._convert_units(0)
     return self
 
   def combine(self, other):
@@ -264,7 +247,7 @@ class Stuff(object, metaclass=MetaStuff):
     """
     if type(self) != type(other):
       raise TypeError('stuff must be of the same type to combine')
-    new_object = self._with_amount(0)
+    new_object = self._with_units(0)
     new_object.put(other)
     new_object.put(self)
     return new_object
@@ -281,8 +264,7 @@ class Stuff(object, metaclass=MetaStuff):
 
     returns a new stuff of the same type containing part of the original stuff.
     """
-    if not isinstance(units, int):
-      raise TypeError('units of stuff to separate must be an integer')
+    units = self._convert_units(units)
     if units < 0:
       raise ValueError('can only separate out a positive amount of stuff')
     if units > self._units:
@@ -295,24 +277,6 @@ class Stuff(object, metaclass=MetaStuff):
     new_stuff = self._with_units(units)
     self._units = remaining
     return new_stuff
-
-  def separate_amount(self, amount):
-    """Separate stuff from this stuff and return a new stuff that contains the removed
-    stuff.
-
-    Stuff is conserved by this operation. After this operation, self contains "amount"
-    less stuff than before, and a new Stuff is created which contains "amount" stuff.
-
-    :self: our stuff.
-    :amount: how much stuff to split off into the new instance.
-
-    returns a new stuff of the same type containing part of the original stuff.
-    """
-    if not isinstance(amount, int):
-      raise TypeError('amount of stuff to separate must be an integer')
-    if amount % self.granularity != 0:
-      raise ValueError('amount is not divisibile by the granularity')
-    return self.separate(amount // self.granularity)
 
   def divide(self, pieces):
     """Attempts to split this stuff into the specified amount of pieces, with
@@ -330,22 +294,30 @@ class Stuff(object, metaclass=MetaStuff):
 
     Raises an ValueError if the stuff cannot be split up into that number of pieces.
     """
-    if not isinstance(pieces, int):
+    if not isinstance(pieces, Integral):
       raise TypeError('number of pieces must be an integer')
+    pieces = int(pieces)
     if pieces <= 0:
       raise ValueError('number of pieces must be positive')
-    base_units_per_piece, remaining_units = divmod(self._units, pieces)
-    if base_units_per_piece < self.min_units:
-      raise ValueError('not enough stuff to make the requested number of pieces')
-    new_stuff = []
-    for i in range(pieces):
-      units_for_piece = base_units_per_piece
-      if i < remaining_units:
-        units_for_piece += 1
-      new_stuff.append(self._with_units(units_for_piece))
-
-    self._units = 0
-    return tuple(new_stuff)
+    if self.unit_type == int:
+      base_units_per_piece, remaining_units = divmod(self._units, pieces)
+      if base_units_per_piece < self.min_units:
+        raise ValueError('not enough stuff to make the requested number of pieces')
+      new_stuff = []
+      for i in range(pieces):
+        units_for_piece = base_units_per_piece
+        if i < remaining_units:
+          units_for_piece += 1
+        new_stuff.append(self._with_units(units_for_piece))
+      self.clear()
+      return tuple(new_stuff)
+    elif self.unit_type == float:
+      units_per_piece = self._units / pieces
+      if units_per_piece < self.min_units:
+        raise ValueError('not enough stuff to make the requested number of pieces')
+      return tuple(self._with_units(units_per_piece) for _ in range(pieces))
+    else:
+      raise TypeError('unknown unit type {}'.format(cls.unit_type))
 
   def _with_units(self, units):
     """Create a new stuff with the specified number of units.
@@ -361,14 +333,14 @@ class Stuff(object, metaclass=MetaStuff):
   # Implementation of the Data Model for this type.
   def __bool__(self):
     """Returns true if this object contains any stuff."""
-    return bool(self.amount)
+    return bool(self._units)
 
   def __str__(self):
-    """Return a representation of this object in the form "{amount} {typename}"."""
-    return '{} of {}'.format(self.amount, self.name or type(self).__name__)
+    """Return a representation of this object in the form "{units} {typename}"."""
+    return '{} {}'.format(self.units, self.name or type(self).__name__)
 
   def __repr__(self):
-    """Return a representation of this object in the form "[{amount} {typename}]"."""
+    """Return a representation of this object in the form "[{units} {typename}]"."""
     return '[' + str(self) + ']'
 
   def __add__(self, other):
@@ -413,7 +385,7 @@ class Stuff(object, metaclass=MetaStuff):
 
     returns a new stuff of the same type containing part of the original stuff.
     """
-    if not isinstance(units, int):
+    if not self._check_unit_type(units)
       return NotImplemented
     return self.separate(units)
 
@@ -428,7 +400,7 @@ class Stuff(object, metaclass=MetaStuff):
     raise NotImplementedError('In Place Subtraction is not supportted for Stuff')
 
   def __floordiv__(self, pieces):
-    if not isinstance(pieces, int):
+    if not isinstance(pieces, Integral):
       return NotImplemented
     return self.divide(pieces)
 
@@ -438,11 +410,14 @@ class Stuff(object, metaclass=MetaStuff):
     :self: the stuff.
     :pieces: the number of pieces.
     """
-    if not isinstance(pieces, int):
+    if not isinstance(pieces, Integral):
       return NotImplemented
+    pieces = int(pieces)
     if pieces <= 0:
       raise ValueError('number of pieces must be positive')
-    base_units_per_piece = self._units // pieces
+    # should be safe for both int and float, since the ceiling of dividing an int by an
+    # int is always less than the next higher int.
+    units_per_piece = self._units / pieces
     return base_units_per_piece >= self.min_units
 
   def __lshift__(self, other):
