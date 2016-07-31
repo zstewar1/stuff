@@ -430,7 +430,7 @@ class Stuff(object, metaclass=MetaStuff):
     either way stuff would be gone forever. If you really want this behavior, use a
     regular operation with assignment.
     """
-    return NotImplemented
+    raise NotImplementedError('In Place Subtraction is not supportted for Stuff')
 
   def __floordiv__(self, pieces):
     if not isinstance(pieces, int):
