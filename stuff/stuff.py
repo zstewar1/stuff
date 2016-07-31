@@ -127,18 +127,13 @@ class Stuff(object, metaclass=MetaStuff):
     """
     return math.ceil(cls.min_amount / cls.granularity)
 
-  def __init__(self, amount=0, *, use_units=False):
+  def __init__(self, units=0):
     """Creates new stuff of this type.
 
-    :amount: How much new stuff should be contained in the new object.
-    :use_units: If true, amount is taken to be in indivisible units of stuff rather than
-      an absolue amount.
+    :units: How many units of new stuff this object should contain.
     """
     self._units = 0
-    if use_units:
-      self.add_units(amount)
-    else:
-      self.add(amount)
+    self.add(units)
 
   @property
   def amount(self):
@@ -150,7 +145,7 @@ class Stuff(object, metaclass=MetaStuff):
     """The number of units of stuff contained in this collection."""
     return self._units
 
-  def add_units(self, units):
+  def add(self, units):
     """Add more stuff to the stuff tracker.
 
     This differs from the addition operator in that the operators are for moving stuff
@@ -167,7 +162,7 @@ class Stuff(object, metaclass=MetaStuff):
     self._units += units
     return self.units
 
-  def add(self, amount):
+  def add_amount(self, amount):
     """Add more stuff to the stuff tracker.
 
     This differs from the addition operator in that the operators are for moving stuff
@@ -181,10 +176,10 @@ class Stuff(object, metaclass=MetaStuff):
       raise TypeError('amount must be an integer')
     if amount % self.granularity != 0:
       raise ValueError('amount is not divisible by the granularity')
-    self.add_units(amount // self.granularity)
+    self.add(amount // self.granularity)
     return self.amount
 
-  def remove_units(self, units):
+  def remove(self, units):
     """Remove units of stuff rom this stuff tracker.
 
     This differs from the subtraction operator in that the operators are for moving stuff
@@ -207,7 +202,7 @@ class Stuff(object, metaclass=MetaStuff):
     self._units = remaining
     return remaining
 
-  def remove(self, amount):
+  def remove_amount(self, amount):
     """Remove an amount of stuff from this tracker.
 
     This differs from the subtraction operator in that the operators are for moving stuff
@@ -222,10 +217,10 @@ class Stuff(object, metaclass=MetaStuff):
       raise TypeError('amount must be an integer')
     if amount % self.granularity != 0:
       raise ValueError('amount is not divisible by the granularity')
-    self.remove_units(amount // granularity)
+    self.remove(amount // granularity)
     return self.amount
 
-  def clear_units(self):
+  def clear(self):
     """Remove all of the stuff from this tracker, discarding it.
 
     returns how many units were removed.
@@ -234,7 +229,7 @@ class Stuff(object, metaclass=MetaStuff):
     self._units = 0
     return units
 
-  def clear(self):
+  def clear_amount(self):
     """Remove all of the stuff from this tracker, discarding it.
 
     returns how much stuff was removed.
@@ -261,7 +256,7 @@ class Stuff(object, metaclass=MetaStuff):
     self._units, other._units = total_units, 0
     return self
 
-  def separate_units(self, units):
+  def separate(self, units):
     """Separate stuff from this stuff and return a new stuff that contains the removed
     stuff.
 
@@ -288,7 +283,7 @@ class Stuff(object, metaclass=MetaStuff):
     self._units = remaining
     return new_stuff
 
-  def separate(self, amount):
+  def separate_amount(self, amount):
     """Separate stuff from this stuff and return a new stuff that contains the removed
     stuff.
 
@@ -304,7 +299,7 @@ class Stuff(object, metaclass=MetaStuff):
       raise TypeError('amount of stuff to separate must be an integer')
     if amount % self.granularity != 0:
       raise ValueError('amount is not divisibile by the granularity')
-    return self.separate_units(amount // self.granularity)
+    return self.separate(amount // self.granularity)
 
   def divide(self, pieces):
     """Attempts to split this stuff into the specified amount of pieces, with
@@ -348,7 +343,7 @@ class Stuff(object, metaclass=MetaStuff):
 
     :units: the number of units of stuff the new instance should hold.
     """
-    return type(self)(amount=units, use_units=True)
+    return type(self)(units=units)
 
   # Implementation of the Data Model for this type.
   def __bool__(self):
@@ -392,7 +387,7 @@ class Stuff(object, metaclass=MetaStuff):
     """
     if not isinstance(units, int):
       return NotImplemented
-    return self.separate_units(units)
+    return self.separate(units)
 
   def __isub__(self, *args):
     """Returns not-implmented because in-place subtraction of stuff is not allowed.
