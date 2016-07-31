@@ -134,7 +134,7 @@ class Stuff(object, metaclass=MetaStuff):
     :use_units: If true, amount is taken to be in indivisible units of stuff rather than
       an absolue amount.
     """
-    self._granular_units = 0
+    self._units = 0
     if use_units:
       self.add_units(amount)
     else:
@@ -143,12 +143,12 @@ class Stuff(object, metaclass=MetaStuff):
   @property
   def amount(self):
     """The total amount of stuff contained in this collection."""
-    return self._granular_units * self.granularity
+    return self._units * self.granularity
 
   @property
   def units(self):
     """The number of units of stuff contained in this collection."""
-    return self._granular_units
+    return self._units
 
   def add_units(self, units):
     """Add more stuff to the stuff tracker.
@@ -164,7 +164,7 @@ class Stuff(object, metaclass=MetaStuff):
       raise TypeError('units must be an integer')
     if units < 0:
       raise ValueError('can only add positive amounts of stuff')
-    self._granular_units += units
+    self._units += units
     return self.units
 
   def add(self, amount):
@@ -199,12 +199,12 @@ class Stuff(object, metaclass=MetaStuff):
       raise TypeError('units must be an integer')
     if units < 0:
       raise ValueError('can only remove positive amounts of stuff')
-    if units > self._granular_units:
+    if units > self._units:
       raise ValueError('cannot remove more stuff than we have')
-    remaining = self._granular_units - units
+    remaining = self._units - units
     if remaining != 0 and remaining < self.least_allowed_units():
       raise ValueError('does not leave enough stuff behind')
-    self._granular_units = remaining
+    self._units = remaining
     return remaining
 
   def remove(self, amount):
@@ -230,8 +230,8 @@ class Stuff(object, metaclass=MetaStuff):
 
     returns how many units were removed.
     """
-    units = self._granular_units
-    self._granular_units = 0
+    units = self._units
+    self._units = 0
     return units
 
   def clear(self):
@@ -240,7 +240,7 @@ class Stuff(object, metaclass=MetaStuff):
     returns how much stuff was removed.
     """
     amount = self.amount
-    self._granular_units = 0
+    self._units = 0
     return amount
 
   def combine(self, other):
@@ -257,8 +257,8 @@ class Stuff(object, metaclass=MetaStuff):
     if type(self) != type(other):
       raise TypeError('stuff must be of the same type to combine')
 
-    total_units = self._granular_units + other._granular_units
-    self._granular_units, other._granular_units = total_units, 0
+    total_units = self._units + other._units
+    self._units, other._units = total_units, 0
     return self
 
   def separate_units(self, units):
@@ -277,15 +277,15 @@ class Stuff(object, metaclass=MetaStuff):
       raise TypeError('units of stuff to separate must be an integer')
     if units < 0:
       raise ValueError('can only separate out a positive amount of stuff')
-    if units > self._granular_units:
+    if units > self._units:
       raise ValueError('cannot separate more units than we have')
     if units < self.least_allowed_units():
       raise ValueError('must separate at least the min_amount worth of units')
-    remaining = self._granular_units - units
+    remaining = self._units - units
     if remaining != 0 and remaining < self.least_allowed_units():
       raise ValueError('does not leave enough stuff behind')
     new_stuff = self._with_units(units)
-    self._granular_units = remaining
+    self._units = remaining
     return new_stuff
 
   def separate(self, amount):
@@ -326,7 +326,7 @@ class Stuff(object, metaclass=MetaStuff):
       raise TypeError('number of pieces must be an integer')
     if pieces <= 0:
       raise ValueError('number of pieces must be positive')
-    base_units_per_piece, remaining_units = divmod(self._granular_units, pieces)
+    base_units_per_piece, remaining_units = divmod(self._units, pieces)
     if base_units_per_piece < self.least_allowed_units():
       raise ValueError('not enough stuff to make the requested number of pieces')
     new_stuff = []
@@ -336,7 +336,7 @@ class Stuff(object, metaclass=MetaStuff):
         units_for_piece += 1
       new_stuff.append(self._with_units(units_for_piece))
 
-    self._granular_units = 0
+    self._units = 0
     return tuple(new_stuff)
 
   def _with_units(self, units):
@@ -419,7 +419,7 @@ class Stuff(object, metaclass=MetaStuff):
       return NotImplemented
     if pieces <= 0:
       raise ValueError('number of pieces must be positive')
-    base_units_per_piece = self._granular_units // pieces
+    base_units_per_piece = self._units // pieces
     return base_units_per_piece >= self.least_allowed_units()
 
   def __lshift__(self, other):
