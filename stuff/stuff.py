@@ -256,8 +256,9 @@ class Stuff(object, metaclass=MetaStuff):
     if type(self) != type(other):
       raise TypeError('stuff must be of the same type to combine')
     new_object = self._with_units(0)
-    new_object.put(other)
-    new_object.put(self)
+    total_units = self._units + other._units
+    zero = self._convert_units(0)
+    new_object._units, self._units, other._units = total_units, zero, zero
     return new_object
 
   def separate(self, units):

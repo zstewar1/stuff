@@ -96,6 +96,157 @@ class TestIntegralStuff(unittest.TestCase):
     self.assertEqual(current, 0)
     self.assertEqual(s.units, 0)
 
+  def test_clear(self):
+    """check clear works normally"""
+    s = IntegralStuff(8)
+    result = s.clear()
+    self.assertEqual(result, 8)
+    self.assertEqual(s.units, 0)
+
+  def test_put(self):
+    """test normal put (both .put() and +=)"""
+    s = IntegralStuff(8)
+    o = IntegralStuff(4)
+    res = s.put(o)
+    self.assertEqual(s.units, 12)
+    self.assertEqual(o.units, 0)
+    self.assertIs(res, s)
+
+    s = IntegralStuff(8)
+    o = IntegralStuff(4)
+    s += o
+    self.assertEqual(s.units, 12)
+    self.assertEqual(o.units, 0)
+
+  def test_put_wrong_type(self):
+    """ensure has correct type-checking"""
+    s = IntegralStuff(8)
+    with self.assertRaises(TypeError):
+      s.put(2)
+    self.assertEqual(s.units, 8)
+
+    s = IntegralStuff(8)
+    with self.assertRaises(TypeError):
+      s += 2
+    self.assertEqual(s.units, 8)
+
+    class WrongTypeStuff(Stuff):
+      unit_size = 3.5
+      min_units = 3
+
+    s = IntegralStuff(8)
+    o = WrongTypeStuff(4)
+    with self.assertRaises(TypeError):
+      s.put(o)
+    self.assertEqual(s.units, 8)
+
+    s = IntegralStuff(8)
+    o = WrongTypeStuff(4)
+    with self.assertRaises(TypeError):
+      s += o
+    self.assertEqual(s.units, 8)
+
+    # We still don't consider it valid if it's a subtype.
+    class WrongTypeSubtype(IntegralStuff):
+      unit_size = 4.75
+      min_units = 1
+
+    s = IntegralStuff(8)
+    o = WrongTypeSubtype(4)
+    with self.assertRaises(TypeError):
+      s.put(o)
+    self.assertEqual(s.units, 8)
+
+    s = IntegralStuff(8)
+    o = WrongTypeSubtype(4)
+    with self.assertRaises(TypeError):
+      s += o
+    self.assertEqual(s.units, 8)
+
+    s = WrongTypeSubtype(8)
+    o = IntegralStuff(4)
+    with self.assertRaises(TypeError):
+      s.put(o)
+    self.assertEqual(s.units, 8)
+
+    s = WrongTypeSubtype(8)
+    o = IntegralStuff(4)
+    with self.assertRaises(TypeError):
+      s += o
+    self.assertEqual(s.units, 8)
+
+  def test_combine(self):
+    """check normal combination (both .combine() and +)"""
+    s = IntegralStuff(8)
+    o = IntegralStuff(4)
+    res = s.combine(o)
+    self.assertEqual(s.units, 0)
+    self.assertEqual(o.units, 0)
+    self.assertEqual(res.units, 12)
+
+    s = IntegralStuff(8)
+    o = IntegralStuff(4)
+    res = s + o
+    self.assertEqual(s.units, 0)
+    self.assertEqual(o.units, 0)
+    self.assertEqual(res.units, 12)
+
+  def test_combine_wrong_type(self):
+    s = IntegralStuff(8)
+    with self.assertRaises(TypeError):
+      s.combine(2)
+    self.assertEqual(s.units, 8)
+
+    s = IntegralStuff(8)
+    with self.assertRaises(TypeError):
+      s + 2
+    self.assertEqual(s.units, 8)
+
+    class WrongTypeStuff(Stuff):
+      unit_size = 3.5
+      min_units = 3
+
+    s = IntegralStuff(8)
+    o = WrongTypeStuff(4)
+    with self.assertRaises(TypeError):
+      s.combine(o)
+    self.assertEqual(s.units, 8)
+
+    s = IntegralStuff(8)
+    o = WrongTypeStuff(4)
+    with self.assertRaises(TypeError):
+      s + o
+    self.assertEqual(s.units, 8)
+
+    # We still don't consider it valid if it's a subtype.
+    class WrongTypeSubtype(IntegralStuff):
+      unit_size = 4.75
+      min_units = 1
+
+    s = IntegralStuff(8)
+    o = WrongTypeSubtype(4)
+    with self.assertRaises(TypeError):
+      s.combine(o)
+    self.assertEqual(s.units, 8)
+
+    s = IntegralStuff(8)
+    o = WrongTypeSubtype(4)
+    with self.assertRaises(TypeError):
+      s + o
+    self.assertEqual(s.units, 8)
+
+    s = WrongTypeSubtype(8)
+    o = IntegralStuff(4)
+    with self.assertRaises(TypeError):
+      s.combine(o)
+    self.assertEqual(s.units, 8)
+
+    s = WrongTypeSubtype(8)
+    o = IntegralStuff(4)
+    with self.assertRaises(TypeError):
+      s + o
+    self.assertEqual(s.units, 8)
+
 
 if __name__ == '__main__':
   unittest.main()
