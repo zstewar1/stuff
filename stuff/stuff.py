@@ -129,6 +129,9 @@ class Stuff(object, metaclass=MetaStuff):
 
   @classmethod
   def _convert_units(cls, units, var='units'):
+    """Ensures that the given number of units is the correct type (real or integral).
+    Raises an error if it is the wrong type.
+    """
     if cls.unit_type == int:
       if not isinstance(units, Integral):
         raise TypeError('{} must be a real number'.format(var))
@@ -142,6 +145,9 @@ class Stuff(object, metaclass=MetaStuff):
 
   @classmethod
   def _check_unit_type(cls, units):
+    """Checks if the given units value is of the correct type. Returns true if
+    _convert_units would not raise an exception.
+    """
     if cls.unit_type == int:
       return isinstance(units, Integral)
     elif cls.unit_type == float:
@@ -154,10 +160,12 @@ class Stuff(object, metaclass=MetaStuff):
 
     :units: How many units of new stuff this object should contain.
     """
-    self._units = self._convert_units(0)
-    self.add(units)
-    if self._units < self.min_units:
+    units = self._convert_units(units)
+    if units < 0:
+      raise ValueError('amount of stuff must be nonnegative')
+    if units != 0 and units < self.min_units:
       raise ValueError('not enough stuff for minimum amount')
+    self._units = units
 
   @property
   def size(self):
