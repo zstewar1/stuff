@@ -278,7 +278,7 @@ class Stuff(object, metaclass=MetaStuff):
       raise ValueError('can only separate out a positive amount of stuff')
     if units > self._units:
       raise ValueError('cannot separate more units than we have')
-    if units < self.min_units:
+    if units != 0 and units < self.min_units:
       raise ValueError('must separate at least the min_units')
     remaining = self._units - units
     if remaining != 0 and remaining < self.min_units:

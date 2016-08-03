@@ -247,6 +247,102 @@ class TestIntegralStuff(unittest.TestCase):
       s + o
     self.assertEqual(s.units, 8)
 
+  def test_separate(self):
+    """check the normal case for stuff separation"""
+    s = IntegralStuff(34)
+    result = s.separate(5)
+    self.assertEqual(s.units, 29)
+    self.assertEqual(result.units, 5)
+
+    s = IntegralStuff(34)
+    result = s - 5
+    self.assertEqual(s.units, 29)
+    self.assertEqual(result.units, 5)
+
+  def test_separate_negative(self):
+    """make sure you can't separate negative amounts"""
+    s = IntegralStuff(34)
+    with self.assertRaises(ValueError):
+      s.separate(-3)
+    self.assertEqual(s.units, 34)
+
+    s = IntegralStuff(34)
+    with self.assertRaises(ValueError):
+      s - (-3)
+    self.assertEqual(s.units, 34)
+
+  def test_separate_wrong_type(self):
+    """make sure type checking is enforced"""
+    s = IntegralStuff(30)
+    with self.assertRaises(TypeError):
+      s.separate(3.0)
+    with self.assertRaises(TypeError):
+      s.separate('asldfja')
+    self.assertEqual(s.units, 30)
+
+    s = IntegralStuff(30)
+    with self.assertRaises(TypeError):
+      s - 3.0
+    with self.assertRaises(TypeError):
+      s - 'asldfja'
+    self.assertEqual(s.units, 30)
+
+  def test_separate_bad_amount(self):
+    """check various cases of separating too much or too little stuff"""
+    s = IntegralStuff(30)
+    with self.assertRaises(ValueError):
+      # Need to separate at least min_units
+      s.separate(2)
+    self.assertEqual(s.units, 30)
+
+    with self.assertRaises(ValueError):
+      # Need to leave behind at least min_units
+      s.separate(28)
+    self.assertEqual(s.units, 30)
+
+    with self.assertRaises(ValueError):
+      # Remove more stuff than we have
+      s.separate(31)
+    self.assertEqual(s.units, 30)
+
+    # check removing the whole bit
+    result = s.separate(30)
+    self.assertEqual(s.units, 0)
+    self.assertEqual(result.units, 30)
+
+    # check removing nothing
+    s = IntegralStuff(30)
+    result = s.separate(0)
+    self.assertEqual(s.units, 30)
+    self.assertEqual(result.units, 0)
+
+    s = IntegralStuff(30)
+    with self.assertRaises(ValueError):
+      # Need to separate at least min_units
+      s - 2
+    self.assertEqual(s.units, 30)
+
+    with self.assertRaises(ValueError):
+      # Need to leave behind at least min_units
+      s - 28
+    self.assertEqual(s.units, 30)
+
+    with self.assertRaises(ValueError):
+      # Remove more stuff than we have
+      s - 31
+    self.assertEqual(s.units, 30)
+
+    # check removing the whole bit
+    result = s - 30
+    self.assertEqual(s.units, 0)
+    self.assertEqual(result.units, 30)
+
+    # check removing nothing
+    s = IntegralStuff(30)
+    result = s - 0
+    self.assertEqual(s.units, 30)
+    self.assertEqual(result.units, 0)
+
 
 if __name__ == '__main__':
   unittest.main()
