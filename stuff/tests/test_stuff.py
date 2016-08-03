@@ -343,6 +343,85 @@ class TestIntegralStuff(unittest.TestCase):
     self.assertEqual(s.units, 30)
     self.assertEqual(result.units, 0)
 
+  def test_divide(self):
+    """Check normal division"""
+    s = IntegralStuff(31)
+    result = s.divide(3)
+    self.assertEqual(len(result), 3)
+    self.assertEqual(result[0].units, 11)
+    self.assertEqual(result[1].units, 10)
+    self.assertEqual(result[2].units, 10)
+    self.assertEqual(s.units, 0)
+
+    s = IntegralStuff(31)
+    result = s // 3
+    self.assertEqual(len(result), 3)
+    self.assertEqual(result[0].units, 11)
+    self.assertEqual(result[1].units, 10)
+    self.assertEqual(result[2].units, 10)
+    self.assertEqual(s.units, 0)
+
+  def test_divide_positive(self):
+    """prevent negative or zero number of pieces"""
+    s = IntegralStuff(31)
+    with self.assertRaises(ValueError):
+      s.divide(-3)
+    self.assertEqual(s.units, 31)
+    with self.assertRaises(ValueError):
+      s.divide(0)
+    self.assertEqual(s.units, 31)
+
+    with self.assertRaises(ValueError):
+      s // -3
+    self.assertEqual(s.units, 31)
+    with self.assertRaises(ValueError):
+      s // 0
+    self.assertEqual(s.units, 31)
+
+  def test_divide_typecheck(self):
+    """prevent incorrect type"""
+    s = IntegralStuff(31)
+    with self.assertRaises(TypeError):
+      s.divide(3.0)
+    self.assertEqual(s.units, 31)
+    with self.assertRaises(TypeError):
+      s.divide('alsdf')
+    self.assertEqual(s.units, 31)
+
+    with self.assertRaises(TypeError):
+      s // 3.0
+    self.assertEqual(s.units, 31)
+    with self.assertRaises(TypeError):
+      s // 'adsfa'
+    self.assertEqual(s.units, 31)
+
+  def test_divide_too_many_pieces(self):
+    s = IntegralStuff(25)
+    with self.assertRaises(ValueError):
+      # not enough stuff in each bit.
+      s.divide(10)
+    self.assertEqual(s.units, 25)
+    # exactly borderline
+    s = IntegralStuff(30)
+    result = s.divide(10)
+    self.assertEqual(len(result), 10)
+    for r in result:
+      self.assertEqual(r.units, 3)
+    self.assertEqual(s.units, 0)
+
+    s = IntegralStuff(25)
+    with self.assertRaises(ValueError):
+      # not enough stuff in each bit.
+      s // 10
+    self.assertEqual(s.units, 25)
+    # exactly borderline
+    s = IntegralStuff(30)
+    result = s // 10
+    self.assertEqual(len(result), 10)
+    for r in result:
+      self.assertEqual(r.units, 3)
+    self.assertEqual(s.units, 0)
+
 
 if __name__ == '__main__':
   unittest.main()
