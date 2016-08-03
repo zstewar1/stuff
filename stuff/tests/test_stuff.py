@@ -422,6 +422,10 @@ class TestIntegralStuff(unittest.TestCase):
       self.assertEqual(r.units, 3)
     self.assertEqual(s.units, 0)
 
+  def test_bool(self):
+    self.assertTrue(IntegralStuff(3))
+    self.assertFalse(IntegralStuff(0))
+
 
 if __name__ == '__main__':
   unittest.main()
