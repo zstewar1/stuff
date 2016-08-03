@@ -1,6 +1,7 @@
 import unittest
 
-from stuff.stuff import Stuff
+from stuff.stuff import Stuff, _REGISTRY
+import stuff
 
 class IntegralStuff(Stuff):
   unit_size = 3.5
@@ -425,6 +426,18 @@ class TestIntegralStuff(unittest.TestCase):
   def test_bool(self):
     self.assertTrue(IntegralStuff(3))
     self.assertFalse(IntegralStuff(0))
+
+
+class TestRegister(unittest.TestCase):
+
+  def tearDown(self):
+    _REGISTRY.clear()
+
+  def test_register(self):
+    class Registered(Stuff):
+      name = 'RegisteredStuff'
+    result = stuff.get_stuff('RegisteredStuff')
+    self.assertIs(result, Registered)
 
 
 if __name__ == '__main__':
