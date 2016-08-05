@@ -7,18 +7,14 @@ __all__ = ['RealStuff']
 class RealStuff(Stuff):
   """Keeps track of real-valued stuff based on its type.
 
-  Includes facilities for controlling how granular tracking should be (i.e. what is the
-  smallest unit that can be split out). These are controlled by setting magic properties
-  on the class instance. The validity of these properties will be verified at type
-  definition time.
+  There are a number of magic properties that can be set on subtypes to control the
+  behavior. The validity of these properties will be verified at type definition time.
 
   :min_units: is the least number of units of stuff that an individual object of this type
     is allowed to contain. Defaults to 1. (Objects are always allowed to contain zero
     stuff, no matter the set minimum. The minimum applies to any nonzero amount of stuff).
 
-  :unit_size: how large each unit of this kind of stuff is. It is recommended to choose
-    unit_size such that it is either an integer or a rational, nonrepeating fraction in
-    binary, as this allows stuff sizes to be manipulated prcisely.
+  :unit_size: how large each unit of this kind of stuff is. Must be a Real.
 
   :name: is the name that the type will be registered under in the stuff type registry. If
     it is None, the subtype will not be registered.
@@ -27,7 +23,7 @@ class RealStuff(Stuff):
   @classmethod
   def _convert_units(cls, units, var='units'):
     """Ensures that the given number of units is of the correct type. Raises an error if
-    it is ofthe wrong type.
+    it is ofthe wrong type. Returns the converted value.
 
     For RealStuff, the units must be of Real type.
     """

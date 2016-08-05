@@ -57,13 +57,13 @@ def get_stuff(name):
 
 
 class MetaStuff(type):
-  """Metaclalss for Stuff objects. Handles things like class-level properties and
+  """Metaclass for Stuff objects. Handles things like class-level properties and
   registration of Stuff types."""
 
   def __init__(self, name, bases, namespace):
-    """Creates a new stuff subtype.
+    """Initializes a new stuff subtype, and registers it if it is named.
 
-    :self: the new type being initialized
+    :self: the new type being initialized.
     :name: name of the new type.
     :bases: list of base types for the new type.
     :namespace: dictionary of the new type's contents.
@@ -82,6 +82,9 @@ class MetaStuff(type):
     if self.unit_size < 0:
       raise ValueError('unit_size of stuff must nonnegative')
 
+    self._register()
+
+  def _register(self):
     name = self.name
     if name is not None:
       with _REGISTRY_LOCK:
@@ -93,18 +96,14 @@ class MetaStuff(type):
 class Stuff(object, metaclass=MetaStuff):
   """Keeps track of a kind of stuff based on its type.
 
-  Includes facilities for controlling how granular tracking should be (i.e. what is the
-  smallest unit that can be split out). These are controlled by setting magic properties
-  on the class instance. The validity of these properties will be verified at type
-  definition time.
+  There are a number of magic properties that can be set on subtypes to control the
+  behavior. The validity of these properties will be verified at type definition time.
 
   :min_units: is the least number of units of stuff that an individual object of this type
     is allowed to contain. Defaults to 1. (Objects are always allowed to contain zero
     stuff, no matter the set minimum. The minimum applies to any nonzero amount of stuff).
 
-  :unit_size: how large each unit of this kind of stuff is. It is recommended to choose
-    unit_size such that it is either an integer or a rational, nonrepeating fraction in
-    binary, as this allows stuff sizes to be manipulated prcisely.
+  :unit_size: how large each unit of this kind of stuff is. Must be a Real.
 
   :name: is the name that the type will be registered under in the stuff type registry. If
     it is None, the subtype will not be registered.
@@ -125,7 +124,7 @@ class Stuff(object, metaclass=MetaStuff):
   @classmethod
   def _convert_units(cls, units, var='units'):
     """Ensures that the given number of units is the correct type. Raises an error if it
-    is the wrong type.
+    is the wrong type. Returns the converted value.
 
     For base stuff, the units must be of Integral type.
     """
