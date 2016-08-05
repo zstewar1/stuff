@@ -41,6 +41,8 @@ stuff.
 from numbers import Integral, Real
 import threading
 
+__all__ = ['get_stuff', 'MetaStuff', 'Stuff']
+
 _REGISTRY_LOCK = threading.RLock()
 _REGISTRY = {}
 
@@ -66,8 +68,6 @@ class MetaStuff(type):
     :bases: list of base types for the new type.
     :namespace: dictionary of the new type's contents.
     """
-    if self.unit_type != int and self.unit_type != float:
-      raise TypeError('unit_type must be either int or float')
     self.min_units = self._convert_units(self.min_units, var='min_units')
     if not isinstance(self.unit_size, Real):
       raise TypeError('unit_size must be a real number')
@@ -108,17 +108,12 @@ class Stuff(object, metaclass=MetaStuff):
 
   :name: is the name that the type will be registered under in the stuff type registry. If
     it is None, the subtype will not be registered.
-
-  :unit_type: this is the numeric type of the stuff being handled. Accepted values are
-    int and float. Defaults to int.
   """
   min_units = 1
 
   unit_size = 1.0
 
   name = None
-
-  unit_type = int
 
   @classmethod
   def min_size(cls):
@@ -129,31 +124,21 @@ class Stuff(object, metaclass=MetaStuff):
 
   @classmethod
   def _convert_units(cls, units, var='units'):
-    """Ensures that the given number of units is the correct type (real or integral).
-    Raises an error if it is the wrong type.
+    """Ensures that the given number of units is the correct type. Raises an error if it
+    is the wrong type.
+
+    For base stuff, the units must be of Integral type.
     """
-    if cls.unit_type == int:
-      if not isinstance(units, Integral):
-        raise TypeError('{} must be a real number'.format(var))
-      return int(units)
-    elif cls.unit_type == float:
-      if not isinstance(units, Real):
-        raise TypeError('{} must be a real number'.format(var))
-      return float(units)
-    else:
-      raise TypeError('unknown unit type {}'.format(cls.unit_type))
+    if not isinstance(units, Integral):
+      raise TypeError('{} must be an integer'.format(var))
+    return int(units)
 
   @classmethod
   def _check_unit_type(cls, units):
     """Checks if the given units value is of the correct type. Returns true if
     _convert_units would not raise an exception.
     """
-    if cls.unit_type == int:
-      return isinstance(units, Integral)
-    elif cls.unit_type == float:
-      return isinstance(units, Real)
-    else:
-      raise TypeError('unknown unit type {}'.format(cls.unit_type))
+    return isinstance(units, Integral)
 
   def __init__(self, units=0):
     """Creates new stuff of this type.
@@ -308,25 +293,17 @@ class Stuff(object, metaclass=MetaStuff):
     pieces = int(pieces)
     if pieces <= 0:
       raise ValueError('number of pieces must be positive')
-    if self.unit_type == int:
-      base_units_per_piece, remaining_units = divmod(self._units, pieces)
-      if base_units_per_piece < self.min_units:
-        raise ValueError('not enough stuff to make the requested number of pieces')
-      new_stuff = []
-      for i in range(pieces):
-        units_for_piece = base_units_per_piece
-        if i < remaining_units:
-          units_for_piece += 1
-        new_stuff.append(self._with_units(units_for_piece))
-      self.clear()
-      return tuple(new_stuff)
-    elif self.unit_type == float:
-      units_per_piece = self._units / pieces
-      if units_per_piece < self.min_units:
-        raise ValueError('not enough stuff to make the requested number of pieces')
-      return tuple(self._with_units(units_per_piece) for _ in range(pieces))
-    else:
-      raise TypeError('unknown unit type {}'.format(cls.unit_type))
+    base_units_per_piece, remaining_units = divmod(self._units, pieces)
+    if base_units_per_piece < self.min_units:
+      raise ValueError('not enough stuff to make the requested number of pieces')
+    new_stuff = []
+    for i in range(pieces):
+      units_for_piece = base_units_per_piece
+      if i < remaining_units:
+        units_for_piece += 1
+      new_stuff.append(self._with_units(units_for_piece))
+    self.clear()
+    return tuple(new_stuff)
 
   def _with_units(self, units):
     """Create a new stuff with the specified number of units.
