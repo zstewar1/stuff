@@ -10,10 +10,6 @@ class RealStuff(Stuff):
   There are a number of magic properties that can be set on subtypes to control the
   behavior. The validity of these properties will be verified at type definition time.
 
-  :min_units: is the least number of units of stuff that an individual object of this type
-    is allowed to contain. Defaults to 1. (Objects are always allowed to contain zero
-    stuff, no matter the set minimum. The minimum applies to any nonzero amount of stuff).
-
   :unit_size: how large each unit of this kind of stuff is. Must be a Real.
 
   :name: is the name that the type will be registered under in the stuff type registry. If
@@ -60,8 +56,6 @@ class RealStuff(Stuff):
     if pieces <= 0:
       raise ValueError('number of pieces must be positive')
     units_per_piece = self._units / pieces
-    if units_per_piece < self.min_units:
-      raise ValueError('not enough stuff to make the requested number of pieces')
     new_stuff = tuple(self._with_units(units_per_piece) for _ in range(pieces))
     self.clear()
     return new_stuff
