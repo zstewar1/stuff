@@ -6,7 +6,6 @@ constructor or by using the add method.
 Typical usage is by defining a new type of stuff by subclassing Stuff.
 
 >>> class MyStuff(Stuff):
-...   min_units = 2
 ...   unit_size = 2.5
 ...   name = 'my stuff'
 
@@ -68,7 +67,6 @@ class MetaStuff(type):
     :bases: list of base types for the new type.
     :namespace: dictionary of the new type's contents.
     """
-    self.min_units = self._convert_units(self.min_units, var='min_units')
     if not isinstance(self.unit_size, Real):
       raise TypeError('unit_size must be a real number')
     self.unit_size = float(self.unit_size)
@@ -77,8 +75,6 @@ class MetaStuff(type):
         raise TypeError('name must be a string')
       self.name = str(self.name)
 
-    if self.min_units <= 0:
-      raise ValueError('min units of stuff must be positive')
     if self.unit_size < 0:
       raise ValueError('unit_size of stuff must nonnegative')
 
@@ -99,27 +95,14 @@ class Stuff(object, metaclass=MetaStuff):
   There are a number of magic properties that can be set on subtypes to control the
   behavior. The validity of these properties will be verified at type definition time.
 
-  :min_units: is the least number of units of stuff that an individual object of this type
-    is allowed to contain. Defaults to 1. (Objects are always allowed to contain zero
-    stuff, no matter the set minimum. The minimum applies to any nonzero amount of stuff).
-
   :unit_size: how large each unit of this kind of stuff is. Must be a Real.
 
   :name: is the name that the type will be registered under in the stuff type registry. If
     it is None, the subtype will not be registered.
   """
-  min_units = 1
-
   unit_size = 1.0
 
   name = None
-
-  @classmethod
-  def min_size(cls):
-    """The minimum size of stuff an instance can contain given the minimum quantity and
-    unit_size.
-    """
-    return cls.min_units * cls.unit_size
 
   @classmethod
   def _convert_units(cls, units, var='units'):
@@ -147,8 +130,6 @@ class Stuff(object, metaclass=MetaStuff):
     units = self._convert_units(units)
     if units < 0:
       raise ValueError('amount of stuff must be nonnegative')
-    if units != 0 and units < self.min_units:
-      raise ValueError('not enough stuff for minimum amount')
     self._units = units
 
   @property
@@ -193,11 +174,8 @@ class Stuff(object, metaclass=MetaStuff):
       raise ValueError('can only remove positive amounts of stuff')
     if units > self._units:
       raise ValueError('cannot remove more stuff than we have')
-    remaining = self._units - units
-    if remaining != 0 and remaining < self.min_units:
-      raise ValueError('does not leave enough stuff behind')
-    self._units = remaining
-    return remaining
+    self._units -= units
+    return self._units
 
   def clear(self):
     """Remove all of the stuff from this tracker, discarding it.
@@ -262,11 +240,7 @@ class Stuff(object, metaclass=MetaStuff):
       raise ValueError('can only separate out a positive amount of stuff')
     if units > self._units:
       raise ValueError('cannot separate more units than we have')
-    if units != 0 and units < self.min_units:
-      raise ValueError('must separate at least the min_units')
     remaining = self._units - units
-    if remaining != 0 and remaining < self.min_units:
-      raise ValueError('does not leave enough stuff behind')
     new_stuff = self._with_units(units)
     self._units = remaining
     return new_stuff
@@ -293,8 +267,6 @@ class Stuff(object, metaclass=MetaStuff):
     if pieces <= 0:
       raise ValueError('number of pieces must be positive')
     base_units_per_piece, remaining_units = divmod(self._units, pieces)
-    if base_units_per_piece < self.min_units:
-      raise ValueError('not enough stuff to make the requested number of pieces')
     new_stuff = []
     for i in range(pieces):
       units_for_piece = base_units_per_piece

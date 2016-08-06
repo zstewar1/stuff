@@ -15,22 +15,6 @@ class TestIntegralStuff(unittest.TestCase):
     self.assertEqual(s.units, 5)
     self.assertEqual(s.size, 17.5)
 
-  def test_init_min_units(self):
-    """make sure min units is enforced"""
-    with self.assertRaises(ValueError):
-      # Below the limit
-      s = IntegralStuff(2)
-    # Exactly the limit
-    s = IntegralStuff(3)
-    self.assertEqual(s.units, 3)
-    # nothing
-    s = IntegralStuff(0)
-    self.assertEqual(s.units, 0)
-
-  def test_min_size(self):
-    """check the given min_size value"""
-    self.assertEqual(IntegralStuff.min_size(), 10.5)
-
   def test_add(self):
     """normal addition"""
     s = IntegralStuff(5)
@@ -83,14 +67,7 @@ class TestIntegralStuff(unittest.TestCase):
     with self.assertRaises(ValueError):
       # Remove more than the total.
       s.remove(40)
-    with self.assertRaises(ValueError):
-      # Remove to below the min_units
-      s.remove(28)
     self.assertEqual(s.units, 30)
-    # Remove to exactly the limit
-    current = s.remove(27)
-    self.assertEqual(current, 3)
-    self.assertEqual(s.units, 3)
     # Remove the whole amount
     s = IntegralStuff(30)
     current = s.remove(30)
@@ -292,16 +269,6 @@ class TestIntegralStuff(unittest.TestCase):
     """check various cases of separating too much or too little stuff"""
     s = IntegralStuff(30)
     with self.assertRaises(ValueError):
-      # Need to separate at least min_units
-      s.separate(2)
-    self.assertEqual(s.units, 30)
-
-    with self.assertRaises(ValueError):
-      # Need to leave behind at least min_units
-      s.separate(28)
-    self.assertEqual(s.units, 30)
-
-    with self.assertRaises(ValueError):
       # Remove more stuff than we have
       s.separate(31)
     self.assertEqual(s.units, 30)
@@ -318,16 +285,6 @@ class TestIntegralStuff(unittest.TestCase):
     self.assertEqual(result.units, 0)
 
     s = IntegralStuff(30)
-    with self.assertRaises(ValueError):
-      # Need to separate at least min_units
-      s - 2
-    self.assertEqual(s.units, 30)
-
-    with self.assertRaises(ValueError):
-      # Need to leave behind at least min_units
-      s - 28
-    self.assertEqual(s.units, 30)
-
     with self.assertRaises(ValueError):
       # Remove more stuff than we have
       s - 31
@@ -354,12 +311,28 @@ class TestIntegralStuff(unittest.TestCase):
     self.assertEqual(result[2].units, 10)
     self.assertEqual(s.units, 0)
 
+    s = IntegralStuff(2)
+    result = s.divide(3)
+    self.assertEqual(len(result), 3)
+    self.assertEqual(result[0].units, 1)
+    self.assertEqual(result[1].units, 1)
+    self.assertEqual(result[2].units, 0)
+    self.assertEqual(s.units, 0)
+
     s = IntegralStuff(31)
     result = s // 3
     self.assertEqual(len(result), 3)
     self.assertEqual(result[0].units, 11)
     self.assertEqual(result[1].units, 10)
     self.assertEqual(result[2].units, 10)
+    self.assertEqual(s.units, 0)
+
+    s = IntegralStuff(2)
+    result = s // 3
+    self.assertEqual(len(result), 3)
+    self.assertEqual(result[0].units, 1)
+    self.assertEqual(result[1].units, 1)
+    self.assertEqual(result[2].units, 0)
     self.assertEqual(s.units, 0)
 
   def test_divide_positive(self):
@@ -395,33 +368,6 @@ class TestIntegralStuff(unittest.TestCase):
     with self.assertRaises(TypeError):
       s // 'adsfa'
     self.assertEqual(s.units, 31)
-
-  def test_divide_too_many_pieces(self):
-    s = IntegralStuff(25)
-    with self.assertRaises(ValueError):
-      # not enough stuff in each bit.
-      s.divide(10)
-    self.assertEqual(s.units, 25)
-    # exactly borderline
-    s = IntegralStuff(30)
-    result = s.divide(10)
-    self.assertEqual(len(result), 10)
-    for r in result:
-      self.assertEqual(r.units, 3)
-    self.assertEqual(s.units, 0)
-
-    s = IntegralStuff(25)
-    with self.assertRaises(ValueError):
-      # not enough stuff in each bit.
-      s // 10
-    self.assertEqual(s.units, 25)
-    # exactly borderline
-    s = IntegralStuff(30)
-    result = s // 10
-    self.assertEqual(len(result), 10)
-    for r in result:
-      self.assertEqual(r.units, 3)
-    self.assertEqual(s.units, 0)
 
   def test_bool(self):
     self.assertTrue(IntegralStuff(3))
