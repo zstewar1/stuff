@@ -93,3 +93,7 @@ class UniqueStuff(Stuff, metaclass=MetaUniqueStuff):
       return False
     else:
       return True
+
+  def __init__(self, units=()):
+    self._units = self._convert_units(units)
+
