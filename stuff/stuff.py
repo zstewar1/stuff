@@ -356,26 +356,10 @@ class Stuff(object, metaclass=MetaStuff):
     """
     raise NotImplementedError('In Place Subtraction is not supportted for Stuff')
 
-  def __floordiv__(self, pieces):
+  def __truediv__(self, pieces):
     if not isinstance(pieces, Integral):
       return NotImplemented
     return self.divide(pieces)
-
-  def __mod__(self, pieces):
-    """Tests whether this stuff can be broken into a given number of pieces.
-
-    :self: the stuff.
-    :pieces: the number of pieces.
-    """
-    if not isinstance(pieces, Integral):
-      return NotImplemented
-    pieces = int(pieces)
-    if pieces <= 0:
-      raise ValueError('number of pieces must be positive')
-    # should be safe for both int and float, since the ceiling of dividing an int by an
-    # int is always less than the next higher int.
-    units_per_piece = self._units / pieces
-    return base_units_per_piece >= self.min_units
 
   def __lshift__(self, other):
     """Shift all the stuff into the left argument. Return the object that now contains all

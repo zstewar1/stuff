@@ -320,7 +320,7 @@ class TestIntegralStuff(unittest.TestCase):
     self.assertEqual(s.units, 0)
 
     s = IntegralStuff(31)
-    result = s // 3
+    result = s / 3
     self.assertEqual(len(result), 3)
     self.assertEqual(result[0].units, 11)
     self.assertEqual(result[1].units, 10)
@@ -328,7 +328,7 @@ class TestIntegralStuff(unittest.TestCase):
     self.assertEqual(s.units, 0)
 
     s = IntegralStuff(2)
-    result = s // 3
+    result = s / 3
     self.assertEqual(len(result), 3)
     self.assertEqual(result[0].units, 1)
     self.assertEqual(result[1].units, 1)
@@ -346,10 +346,10 @@ class TestIntegralStuff(unittest.TestCase):
     self.assertEqual(s.units, 31)
 
     with self.assertRaises(ValueError):
-      s // -3
+      s / -3
     self.assertEqual(s.units, 31)
     with self.assertRaises(ValueError):
-      s // 0
+      s / 0
     self.assertEqual(s.units, 31)
 
   def test_divide_typecheck(self):
@@ -363,10 +363,10 @@ class TestIntegralStuff(unittest.TestCase):
     self.assertEqual(s.units, 31)
 
     with self.assertRaises(TypeError):
-      s // 3.0
+      s / 3.0
     self.assertEqual(s.units, 31)
     with self.assertRaises(TypeError):
-      s // 'adsfa'
+      s / 'adsfa'
     self.assertEqual(s.units, 31)
 
   def test_bool(self):
