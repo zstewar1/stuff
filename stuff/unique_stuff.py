@@ -26,7 +26,22 @@ class MetaUniqueStuff(MetaStuff):
     :bases: list of base types for the new type.
     :namespace: dictionary of the new type's contents.
     """
-    # TODO(zstewart): Setup checks for the UniqueStuff type.
+    if self.unit_type is None:
+      if not isinstance(self.unit_size, Real):
+        raise TypeError('unit_size must be a real number')
+      self.unit_size = float(self.unit_size)
+    elif issubclass(self.unit_type, Stuff):
+      # TODO(zstewart): create a Container type that can hold stuff but be used as a unit.
+      raise TypeError('unit type should not be a stuff subtype')
+    elif issubclass(self.unit_type, ISized):
+      if self.unit_size is not None and not isinstance(self.unit_size, Real):
+        raise TypeError('unit_size must be None or a real number')
+      self.unit_size = None
+    else:
+      if not isinstance(self.unit_size, Real):
+        raise TypeError('unit_size must be a real number')
+      self.unit_size = float(self.unit_size)
+
     self._register()
 
 
