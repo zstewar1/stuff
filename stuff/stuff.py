@@ -28,8 +28,7 @@ Supported operations include:
   - Addition: combine two stuff into a new stuff, emptying the originals in the process.
   - In-Place Addition: put all the stuff from one stuff into another stuff.
   - Subtraction: split off some amount of stuff into a new object.
-  - Division: split split stuff into a tuple of smaller bits of stuff.
-  - Modulo: check if a split would be valid.
+  - Division: split stuff into a tuple of smaller bits of stuff.
   - Left Shift: Put all the stuff in the left operand.
   - Right Shift: Put all the stuff in the right operand.
 

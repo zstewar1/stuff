@@ -6,7 +6,7 @@ def readme():
     return rm.read()
 
 setup(
-    name='stuff',
+    name='track-stuff',
     version='0.0.1',
     description='A library for keeping track of quantities of stuff',
     long_description=readme(),
